@@ -18,6 +18,7 @@ import time
 parser = argparse.ArgumentParser('Language model with attention')
 
 parser.add_argument("--gpu", type=int, default=0)
+parser.add_argument("--use_cuda", type=bool, default=False, help="whether to use gpu")
 parser.add_argument("--data_path", type=str, default='data/train2.txt', help="path of data")
 parser.add_argument("--glove_path", type=str, default='data/glove_dict.pkl', help="path of glove")
 parser.add_argument("--dict_path", type=str, default='data/dict.json', help="path of preprocessed dictionary")
@@ -75,11 +76,14 @@ def train(dataloader, model, optimizer):
 
 
 def main():
-	torch.cuda.set_device(args.gpu)
+	if args.use_cuda:
+		torch.cuda.set_device(args.gpu)
 
 	dataloader = DataLoader(dict_path=args.dict_path, glove_path=args.glove_path, data_path=args.data_path, batch_size=args.batch_size, use_glove=args.use_glove)
 
-	model = Net(no_words=dataloader.tokenizer.no_words, lstm_size=args.lstm_size, emb_size=args.emb_size, depth=args.depth).cuda()
+	model = Net(no_words=dataloader.tokenizer.no_words, lstm_size=args.lstm_size, emb_size=args.emb_size, depth=args.depth)
+	if args.use_cuda:
+		model = model.cuda()
 
 	if args.start_iter != 0:
 		# load the model state from pre-specified iteration (saved model available)
