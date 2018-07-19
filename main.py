@@ -7,6 +7,7 @@ import json
 
 from model.net import Net
 from dataloader import DataLoader
+from preprocess_data.tokenizer import Tokenizer
 
 import torch
 import torch.nn as nn
@@ -42,11 +43,12 @@ Arguments:
 	dataloader : to load the train set
 	model : language model to be used
 	optimizer : optimizer to be used
+	tokenizer : load class tokenizer to decode the answer tokens into words
 
 Returns:
 	None
 '''
-def train(dataloader, model, optimizer):
+def train(dataloader, model, optimizer, tokenizer):
 
 	model.train() # define the state of the model
 	iteration = args.start_iter
@@ -59,6 +61,10 @@ def train(dataloader, model, optimizer):
 		loss, ans_token = model(tokens, glove_emb, answer) # get the loss and predicted answer
 		loss.backward() # compute backpropagation
 		optimizer.step() # update the weights
+
+		ans_token = ans_token.data.cpu().numpy().tolist()
+		ans_word = tokenizer.decode_sentence(ans_token) # decode the answer tokens into words
+		# print ('ans_word: ', ans_word)
 
 		iteration += 1
 
@@ -89,9 +95,11 @@ def main():
 		# load the model state from pre-specified iteration (saved model available)
 		model.load_state_dict(torch.load(os.path.join(args.save_dir, 'iter_%d.pth'%(args.start_iter))), strict=False)
 	
+	tokenizer = Tokenizer(args.dict_path)
+
 	optimizer = optim.Adam(model.parameters(), lr=args.lr)
 
-	train(dataloader, model, optimizer)
+	train(dataloader, model, optimizer, tokenizer)
 
 if __name__ == '__main__':
 	main()
